@@ -6,6 +6,15 @@ import {
   DeterministicDemoProvider,
 } from "./ai";
 describe("AI provider routing", () => {
+  it("uses the lesson explanation for course-only chat without claiming it is AI", async () => {
+    const provider = new DeterministicDemoProvider();
+    const answer = await provider.reply([
+      { role: "system", content: "Пояснення: Дріб показує рівні частини. Приклади: 1/2" },
+      { role: "user", content: "Поясни" },
+    ]);
+    expect(answer).toContain("Дріб показує рівні частини");
+    expect(answer).toContain("не відповідь, згенерована AI");
+  });
   it("uses deterministic course content if no cloud configured", async () => {
     const router = new AIProviderRouter(
       new CloudAIProvider({ url: "", model: "", apiKey: "" }),

@@ -1758,3 +1758,4 @@ p {
 .welcome-card label { margin-top: 8px; font-weight: 600; }
 .welcome-card input { width: 100%; padding: 12px; border: 1px solid #dedbe5; border-radius: 8px; font: inherit; }
 .welcome-card .button-primary { margin-top: 8px; }
+.provider-help { display: block; max-width: 380px; margin-top: 7px; color: #777581; font-size: 11px; line-height: 1.45; }

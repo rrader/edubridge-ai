@@ -100,3 +100,8 @@ test("first opening asks for a learner name", async ({ page }) => {
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Welcome to EduBridge" })).toBeVisible();
 });
+
+test("browser AI is the default tutor provider", async ({ page }) => {
+  await page.getByRole("button", { name: /AI-тьютор/ }).click();
+  await expect(page.locator(".provider-select select")).toHaveValue("browser");
+});

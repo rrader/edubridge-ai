@@ -79,8 +79,8 @@ export default function App() {
     );
   const [provider, setProvider] = useState<
       "auto" | "cloud" | "browser" | "demo"
-    >("auto"),
-    [activeProvider, setActiveProvider] = useState("Матеріали курсу"),
+    >("browser"),
+    [activeProvider, setActiveProvider] = useState("AI у браузері"),
     [cloudUrl, setCloudUrl] = useState(""),
     [cloudModel, setCloudModel] = useState(""),
     [apiKey, setApiKey] = useState(""),
@@ -129,7 +129,12 @@ export default function App() {
       setHistory(await readState("history", []));
       setCloudUrl(await readState("cloudUrl", ""));
       setCloudModel(await readState("cloudModel", ""));
-      setProvider(await readState("provider", "auto"));
+      const savedProvider = await readState<"auto" | "cloud" | "browser" | "demo">("provider", "browser");
+      const browserDefaultApplied = await readState("browserDefaultApplied", false);
+      const selectedProvider = !browserDefaultApplied && savedProvider === "auto" ? "browser" : savedProvider;
+      setProvider(selectedProvider);
+      await saveState("browserDefaultApplied", true);
+      if (selectedProvider !== savedProvider) await saveState("provider", selectedProvider);
       setRequests(await db.requests.toArray());
       setAttemptRecords(await db.attempts.toArray());
       setReady(localStorage.getItem("edubridge-model-ready") === "yes");
@@ -317,7 +322,9 @@ export default function App() {
       setChat((v) => [...v, { role: "tutor", text: result.text }]);
     } catch (e) {
       setNotice(
-        `AI зараз недоступний: ${String(e)}. Перевірені матеріали та вправи працюють.`,
+        provider === "browser"
+          ? `Браузерний AI ще не підготовлено або він недоступний (${String(e)}). Показую пояснення з матеріалів курсу.`
+          : `AI зараз недоступний: ${String(e)}. Перевірені матеріали та вправи працюють.`,
       );
       setActiveProvider("Перевірені матеріали курсу");
       setChat((v) => [
@@ -1007,13 +1014,20 @@ export default function App() {
                   <div className="provider-select">
                     <select
                       value={provider}
-                      onChange={(e) => setProvider(e.target.value as any)}
+                      onChange={(e) => {
+                        const selected = e.target.value as "auto" | "cloud" | "browser" | "demo";
+                        setProvider(selected);
+                        saveState("provider", selected);
+                      }}
                     >
                       <option value="auto">Автоматично</option>
                       <option value="cloud">Хмарний AI</option>
                       <option value="browser">AI у браузері</option>
                       <option value="demo">Матеріали курсу</option>
                     </select>
+                    <small className="provider-help">
+                      AI у браузері генерує відповіді на цьому пристрої після завантаження моделі. «Матеріали курсу» показують підготовлене пояснення з уроку без генерації AI.
+                    </small>
                   </div>
                 </div>
                 <div className="chat-log">

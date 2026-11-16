@@ -14,8 +14,12 @@ export class DeterministicDemoProvider implements AIProvider {
   async available() {
     return true;
   }
-  async reply(_messages: ChatMessage[]) {
-    return "Я працюю за перевіреними матеріалами теми. Спробуй спершу визначити, на які однакові частини поділене ціле.";
+  async reply(messages: ChatMessage[]) {
+    const system = messages.find((message) => message.role === "system")?.content ?? "";
+    const explanation = system.match(/Пояснення: ([\s\S]*?)\. Приклади:/)?.[1];
+    if (explanation)
+      return `Матеріал курсу: ${explanation}. Це підготовлене пояснення, а не відповідь, згенерована AI.`;
+    return "Це підготовлені матеріали курсу, а не відповідь, згенерована AI. Відкрий урок, щоб переглянути пояснення та приклади.";
   }
 }
 export class CloudAIProvider implements AIProvider {
