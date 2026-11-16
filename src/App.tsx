@@ -131,7 +131,7 @@ export default function App() {
       setCloudModel(await readState("cloudModel", ""));
       const savedProvider = await readState<"auto" | "cloud" | "browser" | "demo">("provider", "browser");
       const browserDefaultApplied = await readState("browserDefaultApplied", false);
-      const selectedProvider = !browserDefaultApplied && savedProvider === "auto" ? "browser" : savedProvider;
+      const selectedProvider = savedProvider === "demo" || (!browserDefaultApplied && savedProvider === "auto") ? "browser" : savedProvider;
       setProvider(selectedProvider);
       await saveState("browserDefaultApplied", true);
       if (selectedProvider !== savedProvider) await saveState("provider", selectedProvider);
@@ -314,7 +314,7 @@ export default function App() {
       );
       setActiveProvider(
         result.provider === "demo"
-          ? "Перевірені матеріали курсу"
+          ? "Резервне пояснення з курсу"
           : result.provider === "cloud"
             ? "Хмарний AI"
             : "AI у браузері",
@@ -324,9 +324,9 @@ export default function App() {
       setNotice(
         provider === "browser"
           ? `Браузерний AI ще не підготовлено або він недоступний (${String(e)}). Показую пояснення з матеріалів курсу.`
-          : `AI зараз недоступний: ${String(e)}. Перевірені матеріали та вправи працюють.`,
+          : `AI зараз недоступний: ${String(e)}. Показую резервне пояснення з курсу.`,
       );
-      setActiveProvider("Перевірені матеріали курсу");
+      setActiveProvider("Резервне пояснення з курсу");
       setChat((v) => [
         ...v,
         {
@@ -1023,10 +1023,9 @@ export default function App() {
                       <option value="auto">Автоматично</option>
                       <option value="cloud">Хмарний AI</option>
                       <option value="browser">AI у браузері</option>
-                      <option value="demo">Матеріали курсу</option>
                     </select>
                     <small className="provider-help">
-                      AI у браузері генерує відповіді на цьому пристрої після завантаження моделі. «Матеріали курсу» показують підготовлене пояснення з уроку без генерації AI.
+                      Браузерний AI генерує відповіді на цьому пристрої після завантаження моделі. Якщо він недоступний, чат покаже резервне пояснення з уроку.
                     </small>
                   </div>
                 </div>
@@ -1492,11 +1491,10 @@ export default function App() {
                       }}
                     >
                       <option value="auto">
-                        Автоматично: Cloud → Browser → курс
+                        Автоматично: Cloud → Browser AI
                       </option>
                       <option value="cloud">Хмарний AI</option>
                       <option value="browser">AI у браузері</option>
-                      <option value="demo">Перевірені матеріали курсу</option>
                     </select>
                   </label>
                   <label>

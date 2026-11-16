@@ -103,5 +103,7 @@ test("first opening asks for a learner name", async ({ page }) => {
 
 test("browser AI is the default tutor provider", async ({ page }) => {
   await page.getByRole("button", { name: /AI-тьютор/ }).click();
-  await expect(page.locator(".provider-select select")).toHaveValue("browser");
+  const providerSelect = page.locator(".provider-select select");
+  await expect(providerSelect).toHaveValue("browser");
+  await expect(providerSelect.locator("option[value=demo]")).toHaveCount(0);
 });
