@@ -309,9 +309,17 @@ export default function App() {
     try {
       const selected =
         scenario === 3 ? (browserAI.isReady ? "browser" : "demo") : provider;
-      const result = await router.ask(messages, selected, () =>
+      if (selected === "browser" && ready && !browserAI.isReady) {
+        setLoadingModel(true);
+        await browserAI.prepare(setProgress);
+        setLoadingModel(false);
+      }
+      const needsSetup = selected === "browser" && !ready;
+      const result = await router.ask(messages, needsSetup ? "demo" : selected, () =>
         setNotice("Хмарний AI недоступний: перемикаюся на доступне пояснення."),
       );
+      if (needsSetup)
+        setNotice("Браузерний AI вибрано, але модель ще не завантажена. Підготуй її на сторінці «Офлайн» (близько 945 МБ). Поки що показую резервне пояснення з уроку.");
       setActiveProvider(
         result.provider === "demo"
           ? "Резервне пояснення з курсу"
@@ -321,9 +329,10 @@ export default function App() {
       );
       setChat((v) => [...v, { role: "tutor", text: result.text }]);
     } catch (e) {
+      setLoadingModel(false);
       setNotice(
         provider === "browser"
-          ? `Браузерний AI ще не підготовлено або він недоступний (${String(e)}). Показую пояснення з матеріалів курсу.`
+          ? `Не вдалося запустити браузерний AI (${String(e)}). Перевір підтримку WebGPU на сторінці «Офлайн». Показую резервне пояснення з уроку.`
           : `AI зараз недоступний: ${String(e)}. Показую резервне пояснення з курсу.`,
       );
       setActiveProvider("Резервне пояснення з курсу");
@@ -1029,6 +1038,17 @@ export default function App() {
                     </small>
                   </div>
                 </div>
+                {provider === "browser" && !ready && (
+                  <div className="model-setup-prompt">
+                    <div>
+                      <b>Потрібно підготувати браузерний AI</b>
+                      <p>Модель завантажується один раз на цей пристрій (близько 945 МБ).</p>
+                    </div>
+                    <button className="button-light" onClick={() => setPage("offline")}>
+                      Підготувати AI →
+                    </button>
+                  </div>
+                )}
                 <div className="chat-log">
                   {chat.length === 0 ? (
                     <div className="chat-welcome">

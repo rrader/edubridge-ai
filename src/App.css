@@ -1759,3 +1759,7 @@ p {
 .welcome-card input { width: 100%; padding: 12px; border: 1px solid #dedbe5; border-radius: 8px; font: inherit; }
 .welcome-card .button-primary { margin-top: 8px; }
 .provider-help { display: block; max-width: 380px; margin-top: 7px; color: #777581; font-size: 11px; line-height: 1.45; }
+.model-setup-prompt { margin: 12px 0; padding: 13px 15px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1px solid #e5defb; border-radius: 9px; background: #f8f6ff; }
+.model-setup-prompt b { color: #51418e; font-size: 12px; }
+.model-setup-prompt p { margin: 4px 0 0; color: #777581; font-size: 11px; }
+.model-setup-prompt .button-light { flex: 0 0 auto; }

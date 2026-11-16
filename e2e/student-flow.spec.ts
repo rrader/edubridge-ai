@@ -106,4 +106,7 @@ test("browser AI is the default tutor provider", async ({ page }) => {
   const providerSelect = page.locator(".provider-select select");
   await expect(providerSelect).toHaveValue("browser");
   await expect(providerSelect.locator("option[value=demo]")).toHaveCount(0);
+  await expect(page.getByText("Потрібно підготувати браузерний AI")).toBeVisible();
+  await page.getByRole("button", { name: "Підготувати AI →" }).click();
+  await expect(page.getByRole("heading", { name: "Підготувати до роботи без інтернету" })).toBeVisible();
 });
