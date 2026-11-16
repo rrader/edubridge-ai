@@ -132,12 +132,22 @@ export default function App() {
       setHistory(await readState("history", []));
       setCloudUrl(await readState("cloudUrl", ""));
       setCloudModel(await readState("cloudModel", ""));
-      const savedProvider = await readState<"auto" | "cloud" | "browser" | "demo">("provider", "browser");
-      const browserDefaultApplied = await readState("browserDefaultApplied", false);
-      const selectedProvider = savedProvider === "demo" || (!browserDefaultApplied && savedProvider === "auto") ? "browser" : savedProvider;
+      const savedProvider = await readState<
+        "auto" | "cloud" | "browser" | "demo"
+      >("provider", "browser");
+      const browserDefaultApplied = await readState(
+        "browserDefaultApplied",
+        false,
+      );
+      const selectedProvider =
+        savedProvider === "demo" ||
+        (!browserDefaultApplied && savedProvider === "auto")
+          ? "browser"
+          : savedProvider;
       setProvider(selectedProvider);
       await saveState("browserDefaultApplied", true);
-      if (selectedProvider !== savedProvider) await saveState("provider", selectedProvider);
+      if (selectedProvider !== savedProvider)
+        await saveState("provider", selectedProvider);
       setRequests(await db.requests.toArray());
       setAttemptRecords(await db.attempts.toArray());
       setReady(localStorage.getItem("edubridge-model-ready") === "yes");
@@ -319,11 +329,18 @@ export default function App() {
         setLoadingModel(false);
       }
       const needsSetup = selected === "browser" && !ready;
-      const result = await router.ask(messages, needsSetup ? "demo" : selected, () =>
-        setNotice("Хмарний AI недоступний: перемикаюся на доступне пояснення."),
+      const result = await router.ask(
+        messages,
+        needsSetup ? "demo" : selected,
+        () =>
+          setNotice(
+            "Хмарний AI недоступний: перемикаюся на доступне пояснення.",
+          ),
       );
       if (needsSetup)
-        setNotice("Браузерний AI вибрано, але модель ще не завантажена. Підготуй її на сторінці «Офлайн» (близько 945 МБ). Поки що показую резервне пояснення з уроку.");
+        setNotice(
+          "Браузерний AI ще завантажується. Поки що показую резервне пояснення з уроку.",
+        );
       setActiveProvider(
         result.provider === "demo"
           ? "Резервне пояснення з курсу"
@@ -336,7 +353,7 @@ export default function App() {
       setLoadingModel(false);
       setNotice(
         provider === "browser"
-          ? `Не вдалося запустити браузерний AI (${String(e)}). Перевір підтримку WebGPU на сторінці «Офлайн». Показую резервне пояснення з уроку.`
+          ? `Не вдалося запустити браузерний AI (${String(e)}). Показую резервне пояснення з уроку.`
           : `AI зараз недоступний: ${String(e)}. Показую резервне пояснення з курсу.`,
       );
       setActiveProvider("Резервне пояснення з курсу");
@@ -383,12 +400,12 @@ export default function App() {
     }
   };
   const prepare = async () => {
-    localStorage.removeItem("edubridge-ai-unavailable");
-    if (!(navigator as any).gpu) {
+    if (!(await browserAI.available())) {
       localStorage.removeItem("edubridge-model-ready");
-      localStorage.setItem("edubridge-ai-unavailable", "yes");
       setReady(false);
-      setModelFailure("Цей браузер або пристрій не підтримує WebGPU.");
+      setModelFailure(
+        "Цей браузер не підтримує WebAssembly, потрібний для локального AI.",
+      );
       return;
     }
     setLoadingModel(true);
@@ -414,12 +431,10 @@ export default function App() {
         { role: "user", content: "Поясни українською, що означає дріб 1/2." },
       ]);
       localStorage.setItem("edubridge-model-ready", "yes");
-      localStorage.removeItem("edubridge-ai-unavailable");
       setReady(true);
       setNotice("Модель завантажена, запущена й перевірена.");
     } catch (e) {
       localStorage.removeItem("edubridge-model-ready");
-      localStorage.setItem("edubridge-ai-unavailable", "yes");
       setReady(false);
       setModelFailure(String(e));
     } finally {
@@ -427,7 +442,13 @@ export default function App() {
     }
   };
   useEffect(() => {
-    if (!appLoaded || !student.trim() || provider !== "browser" || autoPrepareStarted.current || localStorage.getItem("edubridge-ai-unavailable") === "yes") return;
+    if (
+      !appLoaded ||
+      !student.trim() ||
+      provider !== "browser" ||
+      autoPrepareStarted.current
+    )
+      return;
     autoPrepareStarted.current = true;
     void prepare();
   }, [appLoaded, student, provider]);
@@ -545,7 +566,10 @@ export default function App() {
           <div className="model-startup-content">
             <span className="brand-mark">e</span>
             <h1>Запускаю браузерний AI</h1>
-            <p>Завантажую модель на цей пристрій. Це може зайняти кілька хвилин.</p>
+            <p>
+              Завантажую компактну модель на цей пристрій. Відповіді
+              працюватимуть через WebGPU або CPU.
+            </p>
             <b>{Math.round(progress * 100)}%</b>
           </div>
           <div
@@ -561,30 +585,63 @@ export default function App() {
         </div>
       )}
       {!!modelFailure && !loadingModel && (
-        <div className="model-startup-screen" role="alertdialog" aria-modal="true" aria-labelledby="model-failure-title">
+        <div
+          className="model-startup-screen"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="model-failure-title"
+        >
           <div className="model-failure-card">
             <span className="brand-mark">e</span>
             <h1 id="model-failure-title">Браузерний AI недоступний</h1>
             <p>{modelFailure.replace(/^Error:\s*/, "")}</p>
-            <small>Навчальні матеріали, вправи та поступ працюють без AI.</small>
-            <button className="button-primary" onClick={() => setModelFailure("")}>ОК</button>
+            <small>
+              Навчальні матеріали, вправи та поступ працюють без AI.
+            </small>
+            <button
+              className="button-primary"
+              onClick={() => setModelFailure("")}
+            >
+              ОК
+            </button>
           </div>
         </div>
       )}
       {!student.trim() && profileLoaded && (
-        <div className="welcome-backdrop" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
-          <form className="welcome-card" onSubmit={(event) => {
-            event.preventDefault();
-            const name = nameDraft.trim();
-            if (name) setStudent(name);
-          }}>
+        <div
+          className="welcome-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="welcome-title"
+        >
+          <form
+            className="welcome-card"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const name = nameDraft.trim();
+              if (name) setStudent(name);
+            }}
+          >
             <span className="brand-mark">e</span>
             <h1 id="welcome-title">Welcome to EduBridge</h1>
             <p>What name should we use for you?</p>
             <label htmlFor="student-name">Your name or nickname</label>
-            <input id="student-name" autoFocus maxLength={40} value={nameDraft} onChange={(event) => setNameDraft(event.target.value)} placeholder="For example, Alex" />
+            <input
+              id="student-name"
+              autoFocus
+              maxLength={40}
+              value={nameDraft}
+              onChange={(event) => setNameDraft(event.target.value)}
+              placeholder="For example, Alex"
+            />
             <small>This name is saved only on this device.</small>
-            <button className="button-primary" type="submit" disabled={!nameDraft.trim()}>Start learning <b>→</b></button>
+            <button
+              className="button-primary"
+              type="submit"
+              disabled={!nameDraft.trim()}
+            >
+              Start learning <b>→</b>
+            </button>
           </form>
         </div>
       )}
@@ -1075,7 +1132,8 @@ export default function App() {
                     <select
                       value={provider}
                       onChange={(e) => {
-                        const selected = e.target.value as "auto" | "cloud" | "browser" | "demo";
+                        const selected = e.target.value as
+                          "auto" | "cloud" | "browser" | "demo";
                         setProvider(selected);
                         saveState("provider", selected);
                       }}
@@ -1085,7 +1143,9 @@ export default function App() {
                       <option value="browser">AI у браузері</option>
                     </select>
                     <small className="provider-help">
-                      Браузерний AI генерує відповіді на цьому пристрої після завантаження моделі. Якщо він недоступний, чат покаже резервне пояснення з уроку.
+                      Браузерний AI генерує відповіді на цьому пристрої після
+                      завантаження моделі. Якщо він недоступний, чат покаже
+                      резервне пояснення з уроку.
                     </small>
                   </div>
                 </div>
@@ -1093,9 +1153,16 @@ export default function App() {
                   <div className="model-setup-prompt">
                     <div>
                       <b>Потрібно підготувати браузерний AI</b>
-                      <p>Модель завантажується один раз на цей пристрій (близько 945 МБ).</p>
+                      <p>
+                        Модель завантажується один раз (близько 550 МБ). Якщо
+                        WebGPU не підтримує модель, вона працюватиме на CPU
+                        повільніше.
+                      </p>
                     </div>
-                    <button className="button-light" onClick={() => setPage("offline")}>
+                    <button
+                      className="button-light"
+                      onClick={() => setPage("offline")}
+                    >
                       Підготувати AI →
                     </button>
                   </div>
@@ -1350,8 +1417,9 @@ export default function App() {
                   </div>
                   <h2>{ready ? "Модель підготовлена" : "Почни з основ"}</h2>
                   <p>
-                    Уроки та прогрес уже зберігаються на пристрої. Додай
-                    локального AI-помічника, якщо пристрій підтримує WebGPU.
+                    Уроки та прогрес уже зберігаються на пристрої. AI обирає
+                    GPU-рушій, сумісний із пристроєм, і переходить на CPU лише
+                    якщо GPU не запускається.
                   </p>
                   <div className="readiness">
                     <div>
@@ -1361,7 +1429,7 @@ export default function App() {
                     <div>
                       <i className={ready ? "green-dot" : "gray-dot"} />
                       {ready ? "Модель збережена" : "Локальна модель"}
-                      <small>Qwen2.5-0.5B · WebLLM</small>
+                      <small>Qwen2.5-0.5B · WebGPU / WebAssembly</small>
                     </div>
                     <div>
                       <i className="green-dot" />
@@ -1387,9 +1455,10 @@ export default function App() {
                     </button>
                   )}
                   <small className="offline-size">
-                    Очікуване завантаження близько 945 МБ; під час роботи
-                    потрібно більше відеопам’яті. WebGPU та вільне місце
-                    залежать від пристрою.
+                    Очікуване завантаження близько 550 МБ; під час роботи
+                    потрібно додаткове місце для запуску. Якщо GPU-рушій
+                    пристрою несумісний, AI автоматично переходить на CPU
+                    повільніше.
                   </small>
                 </div>
               </div>

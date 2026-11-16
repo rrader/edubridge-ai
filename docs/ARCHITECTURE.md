@@ -9,7 +9,7 @@ flowchart LR
   UI --> DB[(IndexedDB: Dexie)]
   UI --> ROUTER[AIProviderRouter]
   ROUTER --> CLOUD[OpenAI-сумісний endpoint]
-  ROUTER --> LOCAL[WebLLM + WebGPU]
+  ROUTER --> LOCAL[WebLLM or Transformers.js + WebGPU/WASM]
   ROUTER --> COURSE[Перевірені пояснення курсу]
   SW[Service Worker: shell/assets] --> UI
   DB --> EXPORT[JSON / CSV]
@@ -24,7 +24,7 @@ Dexie схема v1 має таблиці `attempts`, `requests`, `records`. JSO
 ## Що зробили учні / сторонні компоненти
 
 - Власні компоненти проєкту: навчальний курс, fraction engine, правила режимів, local-first сховище, teacher intervention flow, маршрутизатор провайдерів, сценарії та сторінки.
-- Сторонні: React, Vite, Dexie, vite-plugin-pwa, WebLLM, Qwen2.5 модель.
+- Сторонні: React, Vite, Dexie, vite-plugin-pwa, WebLLM, Transformers.js, Qwen2.5 модель.
 - Немає заяви, що команда навчила власну LLM або модель.
 
 ## Обмеження

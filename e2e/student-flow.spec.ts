@@ -2,7 +2,14 @@ import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }, testInfo) => {
   await page.addInitScript(() => {
-    Object.defineProperty(navigator, "gpu", { configurable: true, value: undefined });
+    Object.defineProperty(navigator, "gpu", {
+      configurable: true,
+      value: undefined,
+    });
+    Object.defineProperty(window, "WebAssembly", {
+      configurable: true,
+      value: undefined,
+    });
   });
   page.on("pageerror", (error) =>
     console.error("BROWSER PAGE ERROR:", error.stack),
@@ -22,7 +29,13 @@ test.beforeEach(async ({ page }, testInfo) => {
     if (response.status() >= 400)
       console.error("BROWSER HTTP ERROR:", response.status(), response.url());
   });
-  if (["first opening asks for a learner name", "unsupported browser shows a dismissible AI notice"].includes(testInfo.title)) return;
+  if (
+    [
+      "first opening asks for a learner name",
+      "unsupported browser shows a dismissible AI notice",
+    ].includes(testInfo.title)
+  )
+    return;
   await page.goto("/edubridge-ai/");
   const welcome = page.getByRole("dialog");
   await expect(welcome).toBeVisible();
@@ -58,13 +71,24 @@ test("prepared PWA shell supports an offline lesson and local progress", async (
 }) => {
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload({ waitUntil: "networkidle" });
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "ОК" })
+    .click();
   await context.setOffline(true);
   await page.reload({ waitUntil: "domcontentloaded" });
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "ОК" })
+    .click();
   await page.getByRole("button", { name: /Продовжити навчання/ }).click();
   await page.getByPlaceholder("Твоя відповідь…").fill("2/5");
   await page.getByRole("button", { name: /Перевірити/ }).click();
   await expect(page.getByText(/Відповідь правильна/)).toBeVisible();
   await page.reload({ waitUntil: "domcontentloaded" });
+  const modelNotice = page.getByRole("alertdialog");
+  await expect(modelNotice).toBeVisible();
+  await modelNotice.getByRole("button", { name: "ОК" }).click();
   await page.getByRole("button", { name: /Мій поступ/ }).click();
   await expect(
     page
@@ -104,7 +128,9 @@ test("escalates repeated difficulty and keeps the topic unmastered", async ({
 test("first opening asks for a learner name", async ({ page }) => {
   await page.goto("/edubridge-ai/");
   await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Welcome to EduBridge" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Welcome to EduBridge" }),
+  ).toBeVisible();
 });
 
 test("browser AI is the default tutor provider", async ({ page }) => {
@@ -112,9 +138,13 @@ test("browser AI is the default tutor provider", async ({ page }) => {
   const providerSelect = page.locator(".provider-select select");
   await expect(providerSelect).toHaveValue("browser");
   await expect(providerSelect.locator("option[value=demo]")).toHaveCount(0);
-  await expect(page.getByText("Потрібно підготувати браузерний AI")).toBeVisible();
+  await expect(
+    page.getByText("Потрібно підготувати браузерний AI"),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Підготувати AI →" }).click();
-  await expect(page.getByRole("heading", { name: "Підготувати до роботи без інтернету" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Підготувати до роботи без інтернету" }),
+  ).toBeVisible();
 });
 
 test("unsupported browser shows a dismissible AI notice", async ({ page }) => {
@@ -122,7 +152,9 @@ test("unsupported browser shows a dismissible AI notice", async ({ page }) => {
   await page.getByLabel("Your name or nickname").fill("Ava");
   await page.getByRole("button", { name: "Start learning" }).click();
   const failure = page.getByRole("alertdialog");
-  await expect(failure.getByRole("heading", { name: "Браузерний AI недоступний" })).toBeVisible();
+  await expect(
+    failure.getByRole("heading", { name: "Браузерний AI недоступний" }),
+  ).toBeVisible();
   await expect(failure.getByRole("button")).toHaveCount(1);
   await failure.getByRole("button", { name: "ОК" }).click();
   await expect(failure).toHaveCount(0);

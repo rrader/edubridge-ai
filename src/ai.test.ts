@@ -3,13 +3,26 @@ import {
   AIProviderRouter,
   BrowserAIProvider,
   CloudAIProvider,
+  canUseWebLLM,
   DeterministicDemoProvider,
 } from "./ai";
 describe("AI provider routing", () => {
+  it("routes WebGPU adapters below the runtime limit to the compatible fallback", () => {
+    expect(
+      canUseWebLLM({ limits: { maxStorageBuffersPerShaderStage: 9 } }),
+    ).toBe(false);
+    expect(
+      canUseWebLLM({ limits: { maxStorageBuffersPerShaderStage: 10 } }),
+    ).toBe(true);
+    expect(canUseWebLLM(null)).toBe(false);
+  });
   it("uses the lesson explanation for course-only chat without claiming it is AI", async () => {
     const provider = new DeterministicDemoProvider();
     const answer = await provider.reply([
-      { role: "system", content: "Пояснення: Дріб показує рівні частини. Приклади: 1/2" },
+      {
+        role: "system",
+        content: "Пояснення: Дріб показує рівні частини. Приклади: 1/2",
+      },
       { role: "user", content: "Поясни" },
     ]);
     expect(answer).toContain("Дріб показує рівні частини");

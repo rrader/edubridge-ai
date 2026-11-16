@@ -15,7 +15,8 @@ export class DeterministicDemoProvider implements AIProvider {
     return true;
   }
   async reply(messages: ChatMessage[]) {
-    const system = messages.find((message) => message.role === "system")?.content ?? "";
+    const system =
+      messages.find((message) => message.role === "system")?.content ?? "";
     const explanation = system.match(/Пояснення: ([\s\S]*?)\. Приклади:/)?.[1];
     if (explanation)
       return `Матеріал курсу: ${explanation}. Це підготовлене пояснення, а не відповідь, згенерована AI.`;
@@ -65,38 +66,121 @@ export class BrowserAIProvider implements AIProvider {
   id = "browser";
   label = "AI у браузері";
   private engine: any;
+  private transformersPipeline: any;
   private loading?: Promise<any>;
   readonly modelId = "Qwen2.5-0.5B-Instruct-q4f16_1-MLC";
+  readonly wasmModelId = "onnx-community/Qwen2.5-0.5B-Instruct";
   async available() {
-    return !!(navigator as any).gpu;
+    return typeof WebAssembly !== "undefined";
   }
   get isReady() {
-    return !!this.engine;
+    return !!(this.engine || this.transformersPipeline);
   }
   async prepare(progress: (p: number) => void) {
     if (!(await this.available()))
-      throw new Error("Цей браузер або пристрій не підтримує WebGPU.");
-    if (!this.loading)
-      this.loading = import("@mlc-ai/web-llm").then(async (m) => {
-        const engine = await m.CreateMLCEngine(this.modelId, {
-          initProgressCallback: (x: any) => progress(x.progress ?? 0),
-        });
-        this.engine = engine;
-        return engine;
+      throw new Error(
+        "Цей браузер не підтримує WebAssembly для локального AI.",
+      );
+    if (!this.loading) {
+      this.loading = (async () => {
+        const gpu = (navigator as any).gpu;
+        let adapter = null;
+        try {
+          adapter = gpu ? await gpu.requestAdapter() : null;
+        } catch {}
+        let fallbackProgress = 0;
+        if (canUseWebLLM(adapter)) {
+          try {
+            const m = await import("@mlc-ai/web-llm");
+            this.engine = await m.CreateMLCEngine(this.modelId, {
+              initProgressCallback: (x: any) =>
+                progress((x.progress ?? 0) * 0.4),
+            });
+            progress(1);
+            return this.engine;
+          } catch {
+            fallbackProgress = 0.15;
+          }
+        }
+        const { pipeline } = await import("@huggingface/transformers");
+        const loadPipeline = (
+          device: "webgpu" | "wasm",
+          dtype: "q4f16" | "q8",
+          start: number,
+          end: number,
+        ) =>
+          pipeline("text-generation", this.wasmModelId, {
+            device,
+            dtype,
+            progress_callback: (info: any) => {
+              if (
+                info.status === "progress_total" &&
+                Number.isFinite(info.progress)
+              )
+                progress(start + (info.progress / 100) * (end - start));
+              else if (info.status === "ready") progress(end);
+            },
+          });
+        if (adapter) {
+          try {
+            this.transformersPipeline = await loadPipeline(
+              "webgpu",
+              "q4f16",
+              fallbackProgress,
+              0.7,
+            );
+            progress(1);
+            return this.transformersPipeline;
+          } catch {
+            fallbackProgress = 0.25;
+          }
+        }
+        this.transformersPipeline = await loadPipeline(
+          "wasm",
+          "q8",
+          fallbackProgress,
+          1,
+        );
+        progress(1);
+        return this.transformersPipeline;
+      })().catch((error) => {
+        this.loading = undefined;
+        throw error;
       });
+    }
     return this.loading;
   }
   async reply(messages: ChatMessage[]) {
-    if (!this.engine) throw new Error("Спершу підготуйте офлайн-модель.");
-    const result = await this.engine.chat.completions.create({
-      messages,
-      temperature: 0.3,
-      max_tokens: 220,
+    if (this.engine) {
+      const result = await this.engine.chat.completions.create({
+        messages,
+        temperature: 0.3,
+        max_tokens: 220,
+      });
+      return (
+        result.choices[0]?.message?.content ??
+        "Не вдалося сформувати відповідь."
+      );
+    }
+    if (!this.transformersPipeline)
+      throw new Error("Модель ще не ініціалізована.");
+    const result = await this.transformersPipeline(messages, {
+      max_new_tokens: 220,
+      do_sample: false,
     });
-    return (
-      result.choices[0]?.message?.content ?? "Не вдалося сформувати відповідь."
-    );
+    const output = result?.[0]?.generated_text;
+    if (Array.isArray(output))
+      return output.at(-1)?.content ?? "Не вдалося сформувати відповідь.";
+    return typeof output === "string"
+      ? output
+      : "Не вдалося сформувати відповідь.";
   }
+}
+
+export function canUseWebLLM(
+  adapter: { limits?: { maxStorageBuffersPerShaderStage?: number } } | null,
+) {
+  return (adapter?.limits?.maxStorageBuffersPerShaderStage ?? 0) >= 10;
 }
 export class AIProviderRouter {
   public cloud: CloudAIProvider;
