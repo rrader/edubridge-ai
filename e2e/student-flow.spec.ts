@@ -1,5 +1,26 @@
 import { expect, test } from "@playwright/test";
 
+test.beforeEach(async ({ page }) => {
+  page.on("pageerror", (error) =>
+    console.error("BROWSER PAGE ERROR:", error.stack),
+  );
+  page.on("console", (message) => {
+    if (message.type() === "error")
+      console.error("BROWSER CONSOLE ERROR:", message.text());
+  });
+  page.on("requestfailed", (request) =>
+    console.error(
+      "BROWSER REQUEST FAILED:",
+      request.url(),
+      request.failure()?.errorText,
+    ),
+  );
+  page.on("response", (response) => {
+    if (response.status() >= 400)
+      console.error("BROWSER HTTP ERROR:", response.status(), response.url());
+  });
+});
+
 test("student opens a fractions lesson and receives deterministic validation", async ({
   page,
 }) => {
