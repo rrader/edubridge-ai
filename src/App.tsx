@@ -35,6 +35,7 @@ type Page =
   | "teacher"
   | "evaluation"
   | "settings";
+type Language = "en" | "uk";
 const modeLabel: Record<Mode, string> = {
   independent: "Самостійне навчання",
   adaptive: "Адаптивне навчання",
@@ -58,6 +59,10 @@ const safeFraction = (s: string): Fraction | null => {
 };
 
 export default function App() {
+  const [language, setLanguage] = useState<Language>(
+    () => (localStorage.getItem("edubridge-language") as Language) || "en",
+  );
+  const tr = (uk: string, en: string) => language === "en" ? en : uk;
   const [page, setPage] = useState<Page>("home"),
     [topicId, setTopicId] = useState("meaning"),
     [student, setStudent] = useState(""),
@@ -118,6 +123,10 @@ export default function App() {
       ),
     [cloudUrl, cloudModel, apiKey, browserAI],
   );
+  useEffect(() => {
+    document.documentElement.lang = language;
+    localStorage.setItem("edubridge-language", language);
+  }, [language]);
   useEffect(() => {
     (async () => {
       setMastery(await readState("mastery", {}));
@@ -550,14 +559,14 @@ export default function App() {
     a.click();
   };
   const nav: [Page, string, string][] = [
-    ["home", "⌂", "Огляд"],
-    ["curriculum", "▦", "Програма"],
-    ["progress", "↗", "Мій поступ"],
-    ["teacher", "♧", "Для вчителя"],
-    ["offline", "◉", "Офлайн"],
-    ["tutor", "✳", "AI-тьютор"],
-    ["evaluation", "▤", "Оцінювання"],
-    ["settings", "⚙", "Налаштування"],
+    ["home", "⌂", tr("Огляд", "Overview")],
+    ["curriculum", "▦", tr("Програма", "Curriculum")],
+    ["progress", "↗", tr("Мій поступ", "My progress")],
+    ["teacher", "♧", tr("Для вчителя", "For teachers")],
+    ["offline", "◉", tr("Офлайн", "Offline")],
+    ["tutor", "✳", tr("AI-тьютор", "AI tutor")],
+    ["evaluation", "▤", tr("Оцінювання", "Evaluation")],
+    ["settings", "⚙", tr("Налаштування", "Settings")],
   ];
   return (
     <div className="app-shell">
@@ -653,7 +662,7 @@ export default function App() {
             <small>LEARN AT YOUR PACE</small>
           </span>
         </a>
-        <div className="side-label">НАВЧАННЯ</div>
+        <div className="side-label">{tr("НАВЧАННЯ", "LEARNING")}</div>
         <nav>
           {nav.map(([id, icon, label]) => (
             <button
@@ -674,13 +683,13 @@ export default function App() {
         </nav>
         <div className="sidebar-bottom">
           <div className="offline-dot">
-            <i /> {offline ? "Офлайн режим" : "Навчання доступне"}
+            <i /> {offline ? tr("Офлайн режим", "Offline mode") : tr("Навчання доступне", "Learning available")}
           </div>
           <button className="profile" onClick={() => setPage("settings")}>
             <div className="avatar">{student[0]}</div>
             <span>
               <b>{student}</b>
-              <small>Учень · 6 клас</small>
+              <small>{tr("Учень · 6 клас", "Student · Grade 6")}</small>
             </span>
             <span className="dots">···</span>
           </button>
@@ -689,7 +698,7 @@ export default function App() {
       <main className="main-area">
         <header className="topbar">
           <div className="crumb">
-            Математика <span>/</span> Дроби <span>/</span>{" "}
+            {tr("Математика", "Math")} <span>/</span> {tr("Дроби", "Fractions")} <span>/</span>{" "}
             <b>
               {page === "lesson"
                 ? topic.title
@@ -697,9 +706,13 @@ export default function App() {
             </b>
           </div>
           <div className="top-right">
+            <div className="language-switch" role="group" aria-label={tr("Мова", "Language")}>
+              <button className={language === "en" ? "selected" : ""} aria-pressed={language === "en"} onClick={() => setLanguage("en")}>EN</button>
+              <button className={language === "uk" ? "selected" : ""} aria-pressed={language === "uk"} onClick={() => setLanguage("uk")}>UK</button>
+            </div>
             <span className="online-pill">
               <i />
-              {offline ? "Офлайн" : "Система активна"}
+              {offline ? tr("Офлайн", "Offline") : tr("Система активна", "System active")}
             </span>
             <button
               className="icon-btn"
@@ -726,13 +739,13 @@ export default function App() {
               <div className="hero-row">
                 <div>
                   <div className="eyebrow">
-                    ПОНЕДІЛОК, 16 ЛИСТОПАДА 2026{" "}
+                    {language === "en" ? "MONDAY, NOVEMBER 16, 2026" : "ПОНЕДІЛОК, 16 ЛИСТОПАДА 2026"}{" "}
                     <span className="spark">✦</span>
                   </div>
                   <h1>
-                    Привіт, {student}! <span>✦</span>
+                    {tr(`Привіт, ${student}!`, `Hello, ${student}!`)} <span>✦</span>
                   </h1>
-                  <p>Кожен крок у навчанні має значення. Продовжимо?</p>
+                  <p>{tr("Кожен крок у навчанні має значення. Продовжимо?", "Every step in learning matters. Shall we continue?")}</p>
                 </div>
                 <button
                   className="button-primary"
@@ -743,7 +756,7 @@ export default function App() {
                     )
                   }
                 >
-                  Продовжити навчання <b>→</b>
+                  {tr("Продовжити навчання", "Continue learning")} <b>→</b>
                 </button>
               </div>
               <div className="stats-grid">
@@ -801,7 +814,7 @@ export default function App() {
               <div className="section-head">
                 <div>
                   <div className="section-kicker">ТВІЙ МАРШРУТ</div>
-                  <h2>Математика · 6 клас</h2>
+                  <h2>{tr("Математика · 6 клас", "Math · Grade 6")}</h2>
                 </div>
                 <button
                   className="button-light"
@@ -892,7 +905,7 @@ export default function App() {
               <div className="page-heading">
                 <div>
                   <div className="section-kicker">НАВЧАЛЬНА ПРОГРАМА</div>
-                  <h1>Дроби — крок за кроком</h1>
+                  <h1>{tr("Дроби — крок за кроком", "Fractions, step by step")}</h1>
                   <p>П’ять тем від розуміння частин до обчислень.</p>
                 </div>
                 <span className="heading-art">½</span>
@@ -1225,7 +1238,7 @@ export default function App() {
               <div className="page-heading">
                 <div>
                   <div className="section-kicker">ТВОЯ ІСТОРІЯ</div>
-                  <h1>Твій поступ, {student}</h1>
+                  <h1>{tr(`Твій поступ, ${student}`, `${student}'s progress`)}</h1>
                   <p>Ти вчишся у своєму темпі — ось що вже вдалося.</p>
                 </div>
                 <button className="button-light" onClick={downloadExport}>
@@ -1600,15 +1613,15 @@ export default function App() {
               <div className="page-heading">
                 <div>
                   <div className="section-kicker">ТВОЇ ПАРАМЕТРИ</div>
-                  <h1>Налаштування</h1>
-                  <p>Псевдонім і підключення зберігаються на цьому пристрої.</p>
+                  <h1>{tr("Налаштування", "Settings")}</h1>
+                  <p>{tr("Псевдонім і підключення зберігаються на цьому пристрої.", "Your nickname and connection settings are saved on this device.")}</p>
                 </div>
               </div>
               <div className="settings-grid">
                 <section className="panel">
-                  <div className="section-kicker">ПРОФІЛЬ УЧНЯ</div>
+                  <div className="section-kicker">{tr("ПРОФІЛЬ УЧНЯ", "STUDENT PROFILE")}</div>
                   <label>
-                    Псевдонім
+                    {tr("Псевдонім", "Nickname")}
                     <input
                       value={student}
                       onChange={(e) => setStudent(e.target.value || "Учень")}
