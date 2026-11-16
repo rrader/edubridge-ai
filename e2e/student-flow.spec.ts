@@ -44,6 +44,7 @@ test.beforeEach(async ({ page }, testInfo) => {
   const failure = page.getByRole("alertdialog");
   await expect(failure).toBeVisible();
   await failure.getByRole("button", { name: "ОК" }).click();
+  await page.getByRole("button", { name: "UK", exact: true }).click();
 });
 
 test("student opens a fractions lesson and receives deterministic validation", async ({
