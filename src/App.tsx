@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { topics } from "./curriculum";
 import {
   detectComparisonMisconception,
@@ -90,9 +90,12 @@ export default function App() {
   const [loadingModel, setLoadingModel] = useState(false),
     [progress, setProgress] = useState(0),
     [ready, setReady] = useState(false),
+    [appLoaded, setAppLoaded] = useState(false),
+    [modelFailure, setModelFailure] = useState(""),
     [scenario, setScenario] = useState<number | null>(null),
     [offline, setOffline] = useState(!navigator.onLine),
     [attemptRecords, setAttemptRecords] = useState<Attempt[]>([]);
+  const autoPrepareStarted = useRef(false);
   const successCount = attemptRecords.filter((a) => a.correct).length;
   const topic = topics.find((t) => t.id === topicId)!;
   const exercise =
@@ -138,6 +141,7 @@ export default function App() {
       setRequests(await db.requests.toArray());
       setAttemptRecords(await db.attempts.toArray());
       setReady(localStorage.getItem("edubridge-model-ready") === "yes");
+      setAppLoaded(true);
     })();
     const onOnline = () => {
       setOffline(false);
@@ -379,8 +383,17 @@ export default function App() {
     }
   };
   const prepare = async () => {
+    localStorage.removeItem("edubridge-ai-unavailable");
+    if (!(navigator as any).gpu) {
+      localStorage.removeItem("edubridge-model-ready");
+      localStorage.setItem("edubridge-ai-unavailable", "yes");
+      setReady(false);
+      setModelFailure("Цей браузер або пристрій не підтримує WebGPU.");
+      return;
+    }
     setLoadingModel(true);
     setNotice("");
+    setModelFailure("");
     try {
       if (navigator.storage?.persist) {
         const ok = await navigator.storage.persist();
@@ -401,16 +414,23 @@ export default function App() {
         { role: "user", content: "Поясни українською, що означає дріб 1/2." },
       ]);
       localStorage.setItem("edubridge-model-ready", "yes");
+      localStorage.removeItem("edubridge-ai-unavailable");
       setReady(true);
       setNotice("Модель завантажена, запущена й перевірена.");
     } catch (e) {
-      setNotice(
-        `Модель не підготовлена: ${String(e)}. Навчальна програма працює без WebGPU.`,
-      );
+      localStorage.removeItem("edubridge-model-ready");
+      localStorage.setItem("edubridge-ai-unavailable", "yes");
+      setReady(false);
+      setModelFailure(String(e));
     } finally {
       setLoadingModel(false);
     }
   };
+  useEffect(() => {
+    if (!appLoaded || !student.trim() || provider !== "browser" || autoPrepareStarted.current || localStorage.getItem("edubridge-ai-unavailable") === "yes") return;
+    autoPrepareStarted.current = true;
+    void prepare();
+  }, [appLoaded, student, provider]);
   const downloadExport = async () => {
     const data = await exportData(),
       url = URL.createObjectURL(
@@ -520,6 +540,37 @@ export default function App() {
   ];
   return (
     <div className="app-shell">
+      {loadingModel && (
+        <div className="model-startup-screen" role="status" aria-live="polite">
+          <div className="model-startup-content">
+            <span className="brand-mark">e</span>
+            <h1>Запускаю браузерний AI</h1>
+            <p>Завантажую модель на цей пристрій. Це може зайняти кілька хвилин.</p>
+            <b>{Math.round(progress * 100)}%</b>
+          </div>
+          <div
+            className="model-startup-track"
+            role="progressbar"
+            aria-label="Завантаження браузерної моделі"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(progress * 100)}
+          >
+            <i style={{ width: `${progress * 100}%` }} />
+          </div>
+        </div>
+      )}
+      {!!modelFailure && !loadingModel && (
+        <div className="model-startup-screen" role="alertdialog" aria-modal="true" aria-labelledby="model-failure-title">
+          <div className="model-failure-card">
+            <span className="brand-mark">e</span>
+            <h1 id="model-failure-title">Браузерний AI недоступний</h1>
+            <p>{modelFailure.replace(/^Error:\s*/, "")}</p>
+            <small>Навчальні матеріали, вправи та поступ працюють без AI.</small>
+            <button className="button-primary" onClick={() => setModelFailure("")}>ОК</button>
+          </div>
+        </div>
+      )}
       {!student.trim() && profileLoaded && (
         <div className="welcome-backdrop" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
           <form className="welcome-card" onSubmit={(event) => {

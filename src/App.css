@@ -1763,3 +1763,15 @@ p {
 .model-setup-prompt b { color: #51418e; font-size: 12px; }
 .model-setup-prompt p { margin: 4px 0 0; color: #777581; font-size: 11px; }
 .model-setup-prompt .button-light { flex: 0 0 auto; }
+.model-startup-screen { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 24px; background: #f7f7f4; }
+.model-startup-content { width: min(520px, 100%); text-align: center; }
+.model-startup-content .brand-mark { display: inline-flex; margin-bottom: 16px; }
+.model-startup-content h1, .model-failure-card h1 { margin: 12px 0 8px; font-size: clamp(23px, 4vw, 32px); }
+.model-startup-content p, .model-failure-card p { color: #777581; line-height: 1.55; }
+.model-startup-content > b { display: block; margin-top: 22px; color: #6653b2; font-size: 20px; }
+.model-startup-track { position: absolute; inset: auto 0 0; height: 10px; overflow: hidden; background: #e7e3f3; }
+.model-startup-track i { display: block; height: 100%; background: #725bd0; transition: width .25s ease; }
+.model-failure-card { width: min(440px, 100%); display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 28px; border: 1px solid #ece9e2; border-radius: 14px; background: #fff; box-shadow: 0 18px 60px #25223b20; }
+.model-failure-card p, .model-failure-card small { margin: 0; }
+.model-failure-card small { color: #777581; }
+.model-failure-card .button-primary { align-self: flex-end; margin-top: 10px; }
