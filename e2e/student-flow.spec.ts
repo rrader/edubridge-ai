@@ -42,6 +42,29 @@ test("static learning content stays available if remote requests fail", async ({
   await expect(page.getByText("Навчальна ціль")).toBeVisible();
 });
 
+test("prepared PWA shell supports an offline lesson and local progress", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/edubridge-ai/");
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload({ waitUntil: "networkidle" });
+  await context.setOffline(true);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: /Продовжити навчання/ }).click();
+  await page.getByPlaceholder("Твоя відповідь…").fill("2/5");
+  await page.getByRole("button", { name: /Перевірити/ }).click();
+  await expect(page.getByText(/Відповідь правильна/)).toBeVisible();
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: /Мій поступ/ }).click();
+  await expect(
+    page
+      .locator(".progress-detail > div")
+      .filter({ hasText: "Вправ пройдено" })
+      .locator("b"),
+  ).toHaveText("1");
+});
+
 test("recognizes denominator addition and switches to adaptive learning", async ({
   page,
 }) => {

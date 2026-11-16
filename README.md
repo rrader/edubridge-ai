@@ -39,7 +39,7 @@ WebLLM: `Qwen2.5-0.5B-Instruct-q4f16_1-MLC`. Завантаження близь
 
 ## GitHub Pages
 
-GitHub Actions публікує окремий Pages сайт цього репозиторію: `https://rrader.github.io/edubridge-ai/`. Застосунок збирається з базовим шляхом `/edubridge-ai/`.
+GitHub Actions публікує окремий Pages сайт цього репозиторію за адресою `https://www.rmn.pp.ua/edubridge-ai/`. GitHub alias `https://rrader.github.io/edubridge-ai/` перенаправляється на цей шлях; для PWA використовуй адресу з `https://www.rmn.pp.ua`. Застосунок збирається з базовим шляхом `/edubridge-ai/`.
 
 GitHub Pages для проєктного репозиторію не прив’язує його автоматично до `https://rmn.pp.ua/edubridge-ai/`. Такий підшлях потребує маршрутизації у власника кореневого домену (наприклад, конфігурації основного сайту чи проксі). У цьому проєкті такі зовнішні налаштування не змінюються.
 
