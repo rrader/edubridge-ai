@@ -1731,3 +1731,30 @@ p {
   padding: 9px;
   border-radius: 6px;
 }
+.welcome-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(34, 32, 43, 0.48);
+  backdrop-filter: blur(5px);
+}
+.welcome-card {
+  width: min(100%, 390px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 30px;
+  border: 1px solid #ece9e2;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 22px 70px #25223b30;
+}
+.welcome-card .brand-mark { align-self: flex-start; }
+.welcome-card h1 { margin: 8px 0 0; font-size: 24px; }
+.welcome-card p, .welcome-card small { margin: 0; color: #777581; }
+.welcome-card label { margin-top: 8px; font-weight: 600; }
+.welcome-card input { width: 100%; padding: 12px; border: 1px solid #dedbe5; border-radius: 8px; font: inherit; }
+.welcome-card .button-primary { margin-top: 8px; }

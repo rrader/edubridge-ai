@@ -60,7 +60,9 @@ const safeFraction = (s: string): Fraction | null => {
 export default function App() {
   const [page, setPage] = useState<Page>("home"),
     [topicId, setTopicId] = useState("meaning"),
-    [student, setStudent] = useState("Соня"),
+    [student, setStudent] = useState(""),
+    [profileLoaded, setProfileLoaded] = useState(false),
+    [nameDraft, setNameDraft] = useState(""),
     [mode, setMode] = useState<Mode>("independent"),
     [teacherLocked, setTeacherLocked] = useState<string[]>([]);
   const [answer, setAnswer] = useState(""),
@@ -116,7 +118,10 @@ export default function App() {
   useEffect(() => {
     (async () => {
       setMastery(await readState("mastery", {}));
-      setStudent(await readState("student", "Соня"));
+      const savedStudent = await readState("student", "");
+      setStudent(savedStudent);
+      setNameDraft(savedStudent);
+      setProfileLoaded(true);
       setMode(await readState("mode", "independent"));
       setTeacherLocked(await readState("teacherLocked", []));
       setInterventionCounts(await readState("interventionCounts", {}));
@@ -148,8 +153,8 @@ export default function App() {
     saveState("mastery", mastery);
   }, [mastery]);
   useEffect(() => {
-    saveState("student", student);
-  }, [student]);
+    if (profileLoaded && student.trim()) saveState("student", student.trim());
+  }, [student, profileLoaded]);
   useEffect(() => {
     saveState("mode", mode);
   }, [mode]);
@@ -499,6 +504,23 @@ export default function App() {
   ];
   return (
     <div className="app-shell">
+      {!student.trim() && profileLoaded && (
+        <div className="welcome-backdrop" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+          <form className="welcome-card" onSubmit={(event) => {
+            event.preventDefault();
+            const name = nameDraft.trim();
+            if (name) setStudent(name);
+          }}>
+            <span className="brand-mark">e</span>
+            <h1 id="welcome-title">Welcome to EduBridge</h1>
+            <p>What name should we use for you?</p>
+            <label htmlFor="student-name">Your name or nickname</label>
+            <input id="student-name" autoFocus maxLength={40} value={nameDraft} onChange={(event) => setNameDraft(event.target.value)} placeholder="For example, Alex" />
+            <small>This name is saved only on this device.</small>
+            <button className="button-primary" type="submit" disabled={!nameDraft.trim()}>Start learning <b>→</b></button>
+          </form>
+        </div>
+      )}
       <aside className="sidebar">
         <a className="brand" onClick={() => setPage("home")}>
           <span className="brand-mark">e</span>
